@@ -1,4 +1,5 @@
-// Jeffrey Ramos, Summer 2020
+// Jeffrey Ramos
+// Summer 2020
 
 import java.io.*;
 import java.util.*;
