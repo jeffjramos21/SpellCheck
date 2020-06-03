@@ -1,6 +1,4 @@
-// Jeffrey Ramos
-// COP 3502, Spring 2019
-// je213324
+// Jeffrey Ramos, Summer 2020
 
 import java.io.*;
 import java.util.*;
