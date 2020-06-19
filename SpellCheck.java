@@ -1,5 +1,4 @@
-// Jeffrey Ramos
-// Summer 2020
+// Jeffrey Ramos, Summer 2020
 
 import java.io.*;
 import java.util.*;
@@ -12,6 +11,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import javax.swing.text.Highlighter.HighlightPainter;
+import javax.swing.text.JTextComponent;
 
 class TrieNode
 {
@@ -37,16 +37,17 @@ public class SpellCheck implements ActionListener
      private JFrame frame;
      private JLabel misspell;
      private String str;
+     private Dimension area;
      
      private void initComponentsDictionary() throws IOException
      {
         dictionaryRoot = buildTrie("dictionary.txt");
 
         frame = new JFrame("SpellCheck");
-        frame.setSize(new Dimension(1200, 1200));
+        frame.setSize(new Dimension(1600, 1600));
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new GridBagLayout());
+//        frame.setLayout(new FlowLayout());
 // 		button.addActionListener(this);
 
         sugg1 = new JButton();
@@ -54,11 +55,14 @@ public class SpellCheck implements ActionListener
         sugg1.addActionListener(this);
 
         misspell = new JLabel();
+        
+        area = new Dimension(0,0);
 
         text = new JTextArea();
-        text.setPreferredSize(new Dimension(500, 500));
-        text.setBounds(0, 0, 500, 400);
+        text.setPreferredSize(new Dimension(1000, 1000));
         text.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        text.setLineWrap(true);
+        text.setWrapStyleWord(true);
         
         text.addKeyListener(new KeyListener()
         {
@@ -77,8 +81,8 @@ public class SpellCheck implements ActionListener
                     str = text.getText();
                     StringBuilder builder = new StringBuilder(str);
                     String prevStr = "";
-                    Highlighter highlighter = text.getHighlighter();
-                    HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.pink);
+                    Highlighter highlighter;
+                    HighlightPainter painter;
 
                     if (str.lastIndexOf(" ") >= 0)
                     {
@@ -110,27 +114,45 @@ public class SpellCheck implements ActionListener
                     prevStr = "";
                     boolean flag = true;
                     str = text.getText();
-                    builder = new StringBuilder(str);
-
-                    if (builder.length() > 0)
+                    
+                    if (str.replaceAll(" ", "").equals(""))
                     {
-                        if (isNumeric(builder.toString()))
+                        return;
+                    }
+                    
+                    if (str.lastIndexOf(" ") < 0)
+                    {
+                        System.out.println("We're working with " + str);
+                        builder = new StringBuilder(str);
+                    }
+                    else
+                    {
+                        str = str.substring(str.lastIndexOf(" ")+1, str.length());
+                        System.out.println("We got " + str);
+                        builder = new StringBuilder(str);
+                    }
+                    
+                    if (isNumeric(builder.toString()))
+                    {
+                        System.out.println("1");
+                        return;
+                    }
+                    else if (builder.toString().indexOf(' ') < 0)
+                    {
+                        System.out.println("2");
+                        if (!containsWord(dictionaryRoot, builder.toString()))
                         {
-                            System.out.println("1");
-                        }
-                        else if (builder.toString().indexOf(' ') < 0)
-                        {
-                            System.out.println("2");
-                            System.out.println("With string " + builder.toString() + " we have an index for space of " + builder.toString().indexOf(""));
-                            if (!containsWord(dictionaryRoot, builder.toString()))
+                            System.out.println("3");
+                            
+                            if (!Character.isAlphabetic(builder.charAt(builder.length() - 1)))
                             {
-                                System.out.println("3");
-                                if (!Character.isAlphabetic(builder.charAt(builder.length() - 1)))
-                                {
-                                    builder.delete(builder.length() - 1, builder.length());
-                                }
+                                builder.delete(builder.length() - 1, builder.length());
+                            }
                                 
                                 str = text.getText();
+                                highlighter = text.getHighlighter();
+                                painter = new DefaultHighlighter.DefaultHighlightPainter(Color.pink);
+                                
                                 int p0 = str.indexOf(builder.toString());
                                 int p1 = p0 + builder.length();
                                
@@ -146,23 +168,26 @@ public class SpellCheck implements ActionListener
                                 System.out.println(builder.toString() + " is not a word.");
                                 flag = false;
                             }
-                        }
-                        else if (isNumeric(builder.substring(0, builder.indexOf(" "))))
-                        {
-                            System.out.println("4");
-                            builder.delete(0, builder.indexOf(" ") + 1);
-                        }
-                        else if (!containsWord(dictionaryRoot, builder.substring(0, builder.indexOf(" "))))
-                        {
-                            System.out.println("5");
-                            System.out.println(builder.substring(0, builder.indexOf(" ")) + " is not a word.");
+                    }
+                    else if (isNumeric(builder.substring(0, builder.indexOf(" "))))
+                    {
+                        System.out.println("4");
+                        builder.delete(0, builder.indexOf(" ") + 1);
+                    }
+                    else if (!containsWord(dictionaryRoot, builder.substring(0, builder.indexOf(" "))))
+                    {
+                        System.out.println("5");
+                        System.out.println(builder.substring(0, builder.indexOf(" ")) + " is not a word.");
                             
                             str = text.getText();
                             int p0 = builder.indexOf(builder.toString());
                             int p1 = p0 + builder.lastIndexOf(" ");
                             try
                             {
+                                highlighter = text.getHighlighter();
+                                painter = new DefaultHighlighter.DefaultHighlightPainter(Color.pink);
                                 highlighter.addHighlight(p0, p1, painter);
+                                removeHighlights(text);
                             }
                             catch (BadLocationException ex)
                             {
@@ -170,13 +195,12 @@ public class SpellCheck implements ActionListener
                             }
                             
                             flag = false;
-                        }
+                    }
                         else
                         {
                             System.out.println("6");
                             str = builder.substring(builder.toString().lastIndexOf(' ')+1, builder.length());
 
-                            System.out.println("Iserting " + str);
                             predictRoot = insert(predictRoot, str);
 
                             if (!prevStr.equals("") && prevStr.charAt(prevStr.length() - 1) != '.')
@@ -197,7 +221,6 @@ public class SpellCheck implements ActionListener
                         }
 
                         builder.delete(0, builder.indexOf(" ") + 1);
-                    }
                     
 
                     if (flag)
@@ -214,7 +237,9 @@ public class SpellCheck implements ActionListener
                     StringBuilder builder = new StringBuilder(str);
                     String prevStr = "";
                     boolean flag = true;
-
+                    
+                    System.out.println("num cols: " + text.getColumns());
+                    System.out.println("caret pos: " + text.getCaretPosition());
                     while (builder.length() > 0)
                     {
                         if (isNumeric(builder.toString()))
@@ -300,10 +325,6 @@ public class SpellCheck implements ActionListener
 
                         System.out.println("No spelling errors detected.");
                     }
-
-//                    printTrie(predictRoot, true);
-//                    atHelper(predictRoot, "I", 40);
-                    System.out.println("");
                 }
             }
 
@@ -312,8 +333,9 @@ public class SpellCheck implements ActionListener
             {}
         });
         
-        scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        scroll.setBounds(300, 25, 500, 500);
+        scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBounds(300, 25, 1000, 1000);
+        
         
         frame.add(sugg1);
 //        frame.add(text);
@@ -384,6 +406,20 @@ public class SpellCheck implements ActionListener
         }
 
         return -1;
+    }
+    
+    public void removeHighlights(JTextComponent textComp)
+    {
+        Highlighter hilite = textComp.getHighlighter();
+        Highlighter.Highlight[] hilites = hilite.getHighlights();
+        
+        for (int i = 0; i < hilites.length; i++)
+        {
+            if (hilites[i].getPainter() instanceof HighlightPainter)
+            {
+                hilite.removeHighlight(hilites[i]);
+            }
+        }
     }
 
     // Insert a string into a trie. This function returns the root of the trie.
