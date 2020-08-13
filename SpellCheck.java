@@ -47,8 +47,6 @@ public class SpellCheck implements ActionListener
         frame.setSize(new Dimension(1600, 1600));
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        frame.setLayout(new FlowLayout());
-// 		button.addActionListener(this);
 
         sugg1 = new JButton();
         sugg1.setPreferredSize(new Dimension(125, 55));
@@ -134,16 +132,12 @@ public class SpellCheck implements ActionListener
                     
                     if (isNumeric(builder.toString()))
                     {
-                        System.out.println("1");
                         return;
                     }
                     else if (builder.toString().indexOf(' ') < 0)
                     {
-                        System.out.println("2");
                         if (!containsWord(dictionaryRoot, builder.toString()))
                         {
-                            System.out.println("3");
-                            
                             if (!Character.isAlphabetic(builder.charAt(builder.length() - 1)))
                             {
                                 builder.delete(builder.length() - 1, builder.length());
@@ -171,14 +165,10 @@ public class SpellCheck implements ActionListener
                     }
                     else if (isNumeric(builder.substring(0, builder.indexOf(" "))))
                     {
-                        System.out.println("4");
                         builder.delete(0, builder.indexOf(" ") + 1);
                     }
                     else if (!containsWord(dictionaryRoot, builder.substring(0, builder.indexOf(" "))))
-                    {
-                        System.out.println("5");
-                        System.out.println(builder.substring(0, builder.indexOf(" ")) + " is not a word.");
-                            
+                    {                            
                             str = text.getText();
                             int p0 = builder.indexOf(builder.toString());
                             int p1 = p0 + builder.lastIndexOf(" ");
@@ -196,37 +186,34 @@ public class SpellCheck implements ActionListener
                             
                             flag = false;
                     }
+		    else
+                    {
+		    	str = builder.substring(builder.toString().lastIndexOf(' ')+1, builder.length());
+
+                        predictRoot = insert(predictRoot, str);
+
+                        if (!prevStr.equals("") && prevStr.charAt(prevStr.length() - 1) != '.')
+                        {
+                            System.out.println("Adding " + str + " to " + prevStr);
+			    TrieNode prevStrRoot = getTerminalNode(predictRoot, prevStr).subtrie;
+                            getTerminalNode(predictRoot, prevStr).subtrie = insert(prevStrRoot, str);
+                            prevStr = str;
+                        }
+                        else if (prevStr.equals(""))
+                        {
+                            prevStr = str;
+                        }
                         else
                         {
-                            System.out.println("6");
-                            str = builder.substring(builder.toString().lastIndexOf(' ')+1, builder.length());
-
-                            predictRoot = insert(predictRoot, str);
-
-                            if (!prevStr.equals("") && prevStr.charAt(prevStr.length() - 1) != '.')
-                            {
-                                System.out.println("Adding " + str + " to " + prevStr);
-                                TrieNode prevStrRoot = getTerminalNode(predictRoot, prevStr).subtrie;
-                                getTerminalNode(predictRoot, prevStr).subtrie = insert(prevStrRoot, str);
-                                prevStr = str;
-                            }
-                            else if (prevStr.equals(""))
-                            {
-                                prevStr = str;
-                            }
-                            else
-                            {
-                                prevStr = "";
-                            }
+                            prevStr = "";
                         }
+                    }
 
-                        builder.delete(0, builder.indexOf(" ") + 1);
-                    
+                    builder.delete(0, builder.indexOf(" ") + 1);
 
                     if (flag)
                     {
                         insert(predictRoot, builder.toString());
-
                         System.out.println("No spelling errors detected.");
                     }
                 }
@@ -336,9 +323,7 @@ public class SpellCheck implements ActionListener
         scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBounds(300, 25, 1000, 1000);
         
-        
         frame.add(sugg1);
-//        frame.add(text);
         frame.add(scroll);
         frame.add(misspell);
         frame.setVisible(true);
@@ -497,7 +482,7 @@ public class SpellCheck implements ActionListener
 //    }
 
     // If printing a subtrie, the second parameter should be true; otherwise, if
-    // printing the main trie, the second parameter should be false. (Credit: Dr. S.)
+    // printing the main trie, the second parameter should be false.
 //    public void printTrie(TrieNode root, boolean useSubtrieFormatting)
 //    {
 //        StringBuilder buffer = new StringBuilder();
@@ -590,8 +575,8 @@ public class SpellCheck implements ActionListener
     }
 
 //    // Prints a word from a trie followed by the word that most frequently follows it in the
-//    // corpus used.
-//    public void atHelper(TrieNode root, String str, int n)
+//    // corpus used. Does this process "n" times.
+//    public void nextWord(TrieNode root, String str, int n)
 //    {
 //        if (root == null)
 //        {
@@ -691,8 +676,7 @@ public class SpellCheck implements ActionListener
         }
 
         // We then reset "buffer" to what it was before searching, which handles the
-        // case where we didn't find the word and we want to "erase" what we inserted, by inserting a
-        // null sentinel at the current index.
+        // case where we didn't find the word and we want to "erase" what we inserted.
         return "";
     }
 
@@ -715,7 +699,7 @@ public class SpellCheck implements ActionListener
         return searchMostCommon(root, buffer, findMaxCount(root, 0), 0);
     }
 
-    // Returns 1 if "str" was found in the trie. Returns 0 otherwise.
+    // Returns true if "str" was found in the trie. Returns false otherwise.
     public boolean containsWord(TrieNode root, String str)
     {
         int index;
@@ -741,13 +725,13 @@ public class SpellCheck implements ActionListener
         }
 
         // If we reached the last node in the path we take trying to find "str" in the trie and it
-        // contains a count greater than 0, that means that we word is, in fact, in the trie.
+        // contains a count greater than 0, that means that the word is in the trie. Return true.
         if (temp != null && temp.count >= 1)
         {
             return true;
         }
 
-        // Otherwise, we return 0.
+        // Otherwise, we return false.
         return false;
     }
 
@@ -793,7 +777,7 @@ public class SpellCheck implements ActionListener
         str = str.toLowerCase();
 
         // If the root is NULL, there cannot be any wrds that begin with the prefix in the trie so we
-        // return 0.
+        // return false.
         if (root == null)
         {
             return false;
@@ -825,8 +809,8 @@ public class SpellCheck implements ActionListener
         return false;
     }
 
-    // Creates a trie and calls the processInputFile function in order to complete actions using that
-    // trie.
+    // Creates a new instance of the SpellCheck class.
+    // Starts up the GUI and inserts an English language dictionary into a trie.
     public static void main(String[] args) throws IOException
     {        
         SpellCheck sp = new SpellCheck();
